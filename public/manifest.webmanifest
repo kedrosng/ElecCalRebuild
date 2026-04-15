@@ -1,0 +1,15 @@
+{
+  "name": "PocketElec — HK Electrical Calculation Tool",
+  "short_name": "PocketElec",
+  "description": "Free, offline-capable cable sizing, genset sizing and loading estimation for HK MEP consultants. EMSD CoP 2025 & BEC 2024 compliant.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f172a",
+  "background_color": "#f8fafc",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "categories": ["productivity", "utilities", "business"]
+}

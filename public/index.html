@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="PocketElec — free, offline-capable electrical calculation tool for HK MEP/electrical consultants. Compliant with EMSD CoP 2025 & BEC 2024." />
+  <title>PocketElec — HK Electrical Calculation Tool</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+  <link rel="apple-touch-icon" href="./icons/icon.svg" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <!-- Tailwind Play CDN for rapid iteration; swap for compiled build in prod -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',
+              400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',
+              800:'#1e40af',900:'#1e3a8a',950:'#172554'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter','system-ui','-apple-system','Segoe UI','Roboto','sans-serif'],
+            mono: ['JetBrains Mono','SFMono-Regular','Menlo','monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- 3rd-party libs for Excel & PDF export (loaded lazily when needed) -->
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased">
+  <div id="app" class="min-h-full flex flex-col"></div>
+
+  <!-- Templates -->
+  <template id="tpl-shell">
+    <div class="flex flex-1 min-h-0">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="hidden md:flex md:w-64 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+        <div class="h-16 flex items-center px-5 border-b border-slate-200 dark:border-slate-800">
+          <a href="#/" class="flex items-center gap-2 font-semibold text-lg">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white text-sm font-bold">PE</span>
+            <span>PocketElec</span>
+          </a>
+        </div>
+        <nav class="flex-1 p-3 space-y-1 text-sm" id="nav"></nav>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 space-y-2">
+          <div class="flex items-center justify-between">
+            <span data-i18n="app.version">Version</span>
+            <span class="font-mono" id="app-version">2.0.0</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-theme" class="flex-1 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle theme">
+              <span class="theme-label">🌙</span>
+            </button>
+            <button id="btn-lang" class="flex-1 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle language">
+              <span class="lang-label">EN</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <div class="flex-1 flex flex-col min-w-0">
+        <header class="h-16 flex items-center justify-between px-4 md:px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+          <div class="flex items-center gap-3">
+            <button id="btn-menu" class="md:hidden p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Menu">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 id="page-title" class="text-base md:text-lg font-semibold truncate">Dashboard</h1>
+          </div>
+          <div class="flex items-center gap-2">
+            <div id="current-project" class="hidden md:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"></div>
+            <button id="btn-nl" class="hidden md:inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50" title="Natural language quick input">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span data-i18n="nl.quick">Quick Input</span>
+            </button>
+          </div>
+        </header>
+        <main id="view" class="flex-1 overflow-auto p-4 md:p-6"></main>
+        <footer class="px-4 md:px-6 py-3 text-xs text-slate-500 dark:text-slate-500 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <span>PocketElec v<span id="ver">2.0.0</span></span>
+            <a href="#/changelog" class="hover:underline" data-i18n="footer.changelog">Changelog</a>
+            <a href="#/" id="btn-feedback" class="hover:underline" data-i18n="footer.feedback">Feedback</a>
+          </div>
+          <div class="text-slate-400 dark:text-slate-600" data-i18n="footer.madeby">Made with ♥ by Dinhaylo</div>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Mobile sidebar -->
+    <div id="mobile-sidebar" class="fixed inset-0 z-40 hidden md:hidden">
+      <div class="absolute inset-0 bg-black/40" data-close></div>
+      <aside class="absolute inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 shadow-xl flex flex-col">
+        <div class="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
+          <span class="font-semibold">PocketElec</span>
+          <button data-close class="p-2">✕</button>
+        </div>
+        <nav class="flex-1 p-3 space-y-1 text-sm" id="nav-mobile"></nav>
+      </aside>
+    </div>
+  </template>
+
+  <!-- Onboarding modal -->
+  <template id="tpl-onboarding">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full p-6 md:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white font-bold">PE</div>
+          <div>
+            <h2 class="text-xl font-semibold" data-i18n="onboarding.title">Welcome to PocketElec</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400" data-i18n="onboarding.subtitle">Free electrical calculation tool for HK consultants</p>
+          </div>
+        </div>
+        <ul class="text-sm space-y-2 mb-5 text-slate-600 dark:text-slate-300">
+          <li>✓ <span data-i18n="onboarding.f1">Cable sizing with auto upstream/downstream totals</span></li>
+          <li>✓ <span data-i18n="onboarding.f2">Genset sizing with voltage-dip check</span></li>
+          <li>✓ <span data-i18n="onboarding.f3">Loading estimation (HK consultant format)</span></li>
+          <li>✓ <span data-i18n="onboarding.f4">EMSD CoP 2025 & BEC 2024 compliant</span></li>
+          <li>✓ <span data-i18n="onboarding.f5">Works offline · Installable · Bilingual</span></li>
+        </ul>
+        <p class="text-sm mb-3 font-medium" data-i18n="onboarding.demos">Start with a demo project:</p>
+        <div class="grid gap-2 mb-6" id="demo-buttons"></div>
+        <div class="flex items-center justify-between">
+          <label class="text-xs text-slate-500 flex items-center gap-2">
+            <input type="checkbox" id="dont-show-again" class="rounded"/>
+            <span data-i18n="onboarding.dont">Don't show this again</span>
+          </label>
+          <button id="onboarding-start" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium" data-i18n="onboarding.start">Start Fresh</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- NL quick-input modal -->
+  <template id="tpl-nl">
+    <div class="fixed inset-0 z-50 flex items-start md:items-center justify-center p-4 bg-black/50">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 mt-16 md:mt-0">
+        <h3 class="text-lg font-semibold mb-2" data-i18n="nl.title">Natural Language Input</h3>
+        <p class="text-xs text-slate-500 mb-3" data-i18n="nl.hint">Examples: "Main cable for 3x50A DBs at 80m, 5% VD" · "Genset for 200kW office, 0.85pf"</p>
+        <input id="nl-input" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm" placeholder="Describe your calculation..." />
+        <div id="nl-preview" class="mt-3 text-xs text-slate-500 font-mono"></div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700" data-close data-i18n="common.cancel">Cancel</button>
+          <button id="nl-apply" class="px-3 py-1.5 text-sm rounded-lg bg-brand-600 text-white" data-i18n="common.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <noscript>
+    <div class="p-8 text-center">PocketElec requires JavaScript. Please enable it and reload.</div>
+  </noscript>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
