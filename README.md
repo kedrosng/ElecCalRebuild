@@ -7,15 +7,6 @@ spreadsheets and targets compliance with:
 - **EMSD Code of Practice for the Electricity (Wiring) Regulations 2025 (CoP 2025)**
 - **Building Energy Code 2024 (BEC 2024)**
 
-> ⚠️ **Note on this rebuild.** This is a ground-up rewrite (v2.0.0) of the
-> original PocketElec (v1 hosted at `app.dinhaylo.com`). The original source
-> could not be accessed when this version was built. Formulas implemented here
-> follow the published EMSD CoP 2025 / BEC 2024 conventions (documented inline
-> in `public/js/formulas.js`). **If any coefficient needs to match legacy v1
-> behaviour exactly, patch `public/js/cable-data.js` (data tables) and/or
-> `public/js/formulas.js` (formulas) — they are intentionally isolated to
-> make this a one-file diff.**
-
 ## Features
 
 | Module | What it does |
