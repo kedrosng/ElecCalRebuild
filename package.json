@@ -1,0 +1,15 @@
+{
+  "name": "pocketelec",
+  "version": "2.0.0",
+  "description": "Free, offline-capable electrical calculation tool for HK MEP/electrical consultants. EMSD CoP 2025 & BEC 2024 compliant.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "npx --yes serve public -l 5173 --no-clipboard",
+    "start": "npm run dev",
+    "preview": "npm run dev"
+  },
+  "keywords": ["electrical", "cable-sizing", "genset", "EMSD", "CoP", "BEC", "Hong-Kong", "PWA"],
+  "author": "Dinhaylo",
+  "license": "MIT"
+}
